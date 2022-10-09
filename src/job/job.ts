@@ -1,3 +1,16 @@
-export abstract class Job<I, S> {
-  abstract dispatch(input: I): Promise<S>;
+export interface IJob<I, O> {
+  dispatch(input: I): Promise<O> | O;
+  jobName: string;
+  Error?: () => Error;
+}
+
+export class Job<I, O> implements IJob<I, O> {
+  dispatch: (input: I) => Promise<O> | O;
+  jobName: string;
+  Error?: () => Error;
+  constructor({ dispatch, jobName, Error }: IJob<I, O>) {
+    this.dispatch = dispatch;
+    this.jobName = jobName;
+    Error ?? (this.Error = Error);
+  }
 }

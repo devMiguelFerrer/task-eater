@@ -4,8 +4,10 @@ import { Job } from "../job";
 export class Task {
   private logger: ILogger = console;
   private started: number = Date.now();
-  constructor(config: { logger?: ILogger; name: string }) {
+  private initialValue;
+  constructor(config: { logger?: ILogger; name: string; initialValue?: any }) {
     config.logger && (this.logger = config.logger);
+    this.initialValue = config.initialValue;
   }
   async runJobs<T1, T2>(j1: Job<T1, T2>): Promise<T2>;
   async runJobs<T1, T2, T3>(j1: Job<T1, T2>, j2: Job<T2, T3>): Promise<T3>;
@@ -82,14 +84,22 @@ export class Task {
     this.logger.log(`Starting Task: [ current jobs: ${jobs.length} ]`);
     const taskResult = await jobs.reduce(async (promiseAcc, job) => {
       const acc = await promiseAcc;
-      this.logger.log(`Running job: ${job.constructor.name}`);
+      this.logger.log(`Running job: ${job.jobName}`);
       const jobStarted = Date.now();
-      const jobResult = await job.dispatch(acc);
+      let jobResult;
+      try {
+        jobResult = await job.dispatch(acc);
+      } catch (error) {
+        if (job.Error) {
+          return job.Error();
+        }
+        throw new Error(`Error from job ${job.jobName}}: ${error}`);
+      }
       this.logger.log(
-        `Finished job: ${job.constructor.name} in ${Date.now() - jobStarted}ms`
+        `Finished job: ${job.jobName} in ${Date.now() - jobStarted}ms`
       );
       return jobResult;
-    }, "asd" as any);
+    }, this.initialValue);
     this.logger.log(
       `Finished Task: [ total jobs: ${jobs.length} ] [ total time: ${
         Date.now() - this.started

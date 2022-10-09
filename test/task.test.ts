@@ -1,12 +1,9 @@
-import { Job, Task } from "../src";
+import { IJob, Job, Task } from "../src";
 
-test("sumar 1 + 2 es igual a 3", () => {
-  expect(1 + 2).toBe(3);
-});
-
-class NumberJob implements Job<number, number> {
+class NumberJob implements IJob<number, number> {
   constructor() {}
 
+  jobName: string = "NumberJob";
   dispatch(input: number): Promise<number> {
     return new Promise((res, rej) => {
       res(7);
@@ -14,40 +11,79 @@ class NumberJob implements Job<number, number> {
   }
 }
 
-class StringJob implements Job<string, string> {
+class StringJob implements IJob<string, string> {
   constructor() {}
 
+  jobName: string = "StringJob";
   dispatch(input: string): Promise<string> {
-    console.log(input);
     return new Promise((res, rej) => {
-      res("asd");
+      res(input);
     });
   }
 }
 
-class StringNumberJob implements Job<string, number> {
+class StringToNumberJob implements IJob<string, number> {
   constructor() {}
 
+  jobName: string = "StringToNumberJob";
   dispatch(input: string): Promise<number> {
     return new Promise((res, rej) => {
-      res(77);
+      res(parseInt(input, 10));
     });
   }
 }
 
-describe("Number 1", () => {
-  test("sumar 2 + 2 es igual a 4", () => {
-    expect(2 + 2).toBe(4);
-  });
-
-  test("the data is peanut butter", async () => {
+describe("TASK", () => {
+  test("EtlTask (1)", async () => {
     const EtlTask = new Task({ name: "" });
     const result = await EtlTask.runJobs(
       new StringJob(),
       new StringJob(),
-      new StringNumberJob(),
-      new NumberJob(),
+      new StringToNumberJob(),
+      new NumberJob()
     );
     expect(result).toBe(7);
+  });
+
+  test("EtlTask (2)", async () => {
+    const EtlTask = new Task({ name: "" });
+    const result = await EtlTask.runJobs(
+      new Job({ dispatch: (d: string) => "s", jobName: "SS" }),
+      new Job({ dispatch: (d: string) => 7, jobName: "SN" })
+    );
+    expect(result).toBe(7);
+  });
+
+  test("MyFirstTask", async () => {
+    // Simple job to change string to number
+    class StringToNumberJob implements IJob<string, number> {
+      constructor() {}
+
+      jobName: string = "StringToNumberJob";
+      dispatch(input: string): Promise<number> {
+        return new Promise((res, rej) => {
+          res(parseInt(input, 10));
+        });
+      }
+    }
+
+    // Simple job get string to return same string
+    class StringJob implements IJob<string, string> {
+      constructor(private initialValue: string) {}
+
+      jobName: string = "StringJob";
+      dispatch(input: string): Promise<string> {
+        return new Promise((res, rej) => {
+          res(input || this.initialValue);
+        });
+      }
+    }
+
+    const MyFirstTask = new Task({ name: "" });
+    const result = await MyFirstTask.runJobs(
+      new StringJob("77"),
+      new StringToNumberJob()
+    );
+    expect(result).toBe(77);
   });
 });
