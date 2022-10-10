@@ -1,8 +1,4 @@
-export interface IJob<I, O> {
-  dispatch(input: I): Promise<O> | O;
-  jobName: string;
-  Error?: () => Error;
-}
+import { IJob } from ".";
 
 export class Job<I, O> implements IJob<I, O> {
   dispatch: (input: I) => Promise<O> | O;
